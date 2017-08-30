@@ -15,8 +15,22 @@
             height: 600px;
         }
 
+        input{
+            height: 40px;
+            width: 80%;
+        }
+
+        button.search {
+            float: right;
+            width: 20%;
+            height: 40px;
+            padding: 0px 0px;
+            vertical-align: middle;
+            text-align: center;
+        }
+
         div.list{
-            height: 550px;
+            height: 560px;
             overflow: scroll;
         }
 
@@ -58,7 +72,8 @@
 
 <body>
     <nav>
-        <button class="search">A</button>
+        <input id="input", type="text">
+        <button class="search", onclick="searchLocation()">Search</button>
         <div id="list" class="list"></div>
     </nav>
     <section id="map"></section>
@@ -67,7 +82,7 @@
         var markers = [];
 
         // Coffee shops near my office
-        var locations = [
+        let locations = [
             {title: "Beck's Cofee Shop", location: {lat:35.698453, lng:139.773124}},
             {title: "Doutor Coffee Asakusabashi Minami", location: {lat:35.696891, lng:139.78579}},
             {title: "Doutor Coffee Sotokanda 1-Chome", location: {lat:35.69948, lng:139.769592}},
@@ -88,24 +103,10 @@
             {title: "Inoda Coffee", location: {lat:35.681434, lng:139.769206}}
         ];
 
-        function initList() {
-            for (var i = 0; i < locations.length; i++) {
-                let item = document.createElement("button");
-                item.innerHTML = locations[i].title;
-                document.getElementById("list").appendChild(item);
-            }
-        }
-
-        function initMap() {
+        function initMap(keyword=null) {
             // Constructor creates a new map - only center and zoom are required.
-
-            initList();
-
             map = new google.maps.Map(document.getElementById('map'), {
-                center: {
-                    lat: 35.686329,
-                    lng: 139.764901
-                },
+                center: {lat: 35.686329,lng: 139.764901},
                 zoom: 13
             });
 
@@ -113,26 +114,40 @@
             var bounds = new google.maps.LatLngBounds();
 
             for (var i = 0; i < locations.length; i++) {
-                var position = locations[i].location;
-                var title = locations[i].title;
-                var marker = new google.maps.Marker({
-                    map: map,
-                    position: position,
-                    title: title + '<br>' + position.lat.toString()+ ', ' +position.lng.toString(),
-                    animation: google.maps.Animation.DROP,
-                    id: i
-                });
-                markers.push(marker);
-                marker.addListener('click', function() {
-                    populateInfoWindow(this, largeInfowindow);
-                });
-                bounds.extend(markers[i].position);
+                var location = locations[i];
+                if (keyword == null || location.title.includes(keyword)) {
+                    makeList(location);
+                    makeLocation(location, largeInfowindow);
+                }
             }
 
+            // create bounds
+            for (var i=0; i < markers.length; i++) {
+                bounds.extend(markers[i].position);
+            }
             map.fitBounds(bounds);
+        }
 
-            document.getElementById('show-listings').addEventListener('click', showListings);
-            document.getElementById('hide-listings').addEventListener('click', hideListings);
+        function makeList(location) {
+            var item = document.createElement("button");
+            item.className = "locationList";
+            item.innerHTML = location.title;
+            document.getElementById("list").appendChild(item);
+        }
+
+        function makeLocation(location, infowindow) {
+            var position = location.location;
+            var title = location.title;
+            var marker = new google.maps.Marker({
+                map: map,
+                position: position,
+                title: title,
+                animation: google.maps.Animation.DROP
+            });
+            markers.push(marker);
+            marker.addListener('click', function() {
+                populateInfoWindow(this, infowindow);
+            });
         }
 
         function populateInfoWindow(marker, infowindow) {
@@ -148,20 +163,20 @@
             }
         }
 
-        function showListings() {
-            var bounds = new google.maps.LatLngBounds();
-            for (var i = 0; i < markers.length; i++) {
-                markers[i].setMap(map);
-                bounds.extend(markers[i].position);
-            }
-            map.fitBounds(bounds);
-        }
+        function searchLocation() {
+            // Get a search word in the input form
+            var text = document.getElementById("input").value;
 
-        function hideListings() {
-            var bounds = new google.maps.LatLngBounds();
-            for (var i = 0; i < markers.length; i++) {
-                markers[i].setMap(null);
+            //Get a list of locations
+            list = document.getElementById("list");
+
+            // Remove all list first
+            while (list.hasChildNodes()) {
+                list.removeChild(list.firstChild);
             }
+
+            // Reload map with keyword
+            initMap(keyword=text);
         }
 
     </script>
