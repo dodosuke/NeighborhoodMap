@@ -59,7 +59,7 @@ button.hide {
     display: none;
 }
 
-section {
+main {
     float: right;
     padding: 0px 12px;
     border: 1px solid #ccc;
@@ -74,7 +74,7 @@ section {
         width: 100%;
         height: 42px;
     }
-    section {
+    map {
         width: 100%;
         height: 558px;
         border: 1px solid #ccc;

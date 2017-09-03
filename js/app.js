@@ -35,11 +35,12 @@ var Location = function(data){
 
 var ViewModel = function() {
     var self = this;
-    this.locationList = ko.observableArray([]);
+    self.locationArray = ko.observableArray();
+    self.keyword = ko.observable('');
 
     // Make a location list from location data
     locations.forEach(function(location){
-        self.locationList.push( new Location(location) );
+        self.locationArray.push( new Location(location) );
     });
 
     // Change a class based on states
@@ -53,11 +54,33 @@ var ViewModel = function() {
         }
     };
 
+    // Live search function
+    self.locationList = ko.computed(function(){
+        var result;
+        if (!self.keyword()) {
+            for (var i=0; i < markers.length; i++) {
+                markers[i].setVisible(true);
+            };
+            return self.locationArray();
+        } else {
+            return ko.utils.arrayFilter(self.locationArray(), function(location) {
+                result = location.title.toLowerCase().indexOf(self.keyword().toLowerCase())
+                if (result !== -1) {
+                    markers[location.id].setVisible(true);
+                } else {
+                    markers[location.id].setVisible(false);
+                }
+                return result;
+
+                //return location.title.toLowerCase().indexOf(self.keyword().toLowerCase()) !== -1;
+            });
+        }
+    });
+
     // Filitering location with a keyword
-    this.filterLocation = function(){
-        // Get a keyword
-        var keyword = document.getElementById("input").value.toLowerCase();
+    self.filterLocation = function(){
         // Make a list, filtering them based on the keyword in the input form
+        var keyword = self.query();
         self.locationList().forEach(function(location){
             location.active(false);
             if (keyword === "" || location.title.toLowerCase().includes(keyword)) {
@@ -111,7 +134,7 @@ var initMap = function() {
 // Add events to Google Map
 var addEvents = function(location, marker, infowindow) {
     marker.addListener('click', function() {
-        populateInfoWindow(this, infowindow);
+            populateInfoWindow(this, infowindow);
     });
     marker.addListener('dblclick', function(){
         getPhotosFromFlickr(location, function(err, data) {
@@ -141,6 +164,13 @@ var makeMarker = function(location) {
 // on that markers position.
 var populateInfoWindow = function(marker, infowindow) {
     // Check to make sure the infowindow is not already opened on this marker.
+    if (marker.getAnimation() !== null) {
+        marker.setAnimation(null);
+    } else {
+        marker.setAnimation(google.maps.Animation.BOUNCE);
+        setTimeout(function(){marker.setAnimation(null);}, 700);
+    }
+
     if (infowindow.marker != marker) {
         infowindow.marker = marker;
         infowindow.setContent('<div>' + marker.title + '</div>');
@@ -210,6 +240,8 @@ var urlForFlickrImg = function(data, int) {
 
 // show an randomly picked image with modal
 var showPhotos = function(json){
+
+    console.log(json);
     // Pick a random photo from results
     var length = json.photos.photo.length;
     var int = Math.floor(Math.random() * (length+1));
