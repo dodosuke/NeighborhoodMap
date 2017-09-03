@@ -2,6 +2,7 @@
 var map;
 var markers = [];
 
+// list of locations
 let locations = [
     {id: 0, title: "Beck's Cofee Shop", location: {lat:35.698453, lng:139.773124}},
     {id: 1, title: "Doutor Coffee Asakusabashi Minami", location: {lat:35.696891, lng:139.78579}},
@@ -23,6 +24,7 @@ let locations = [
     {id: 17, title: "Inoda Coffee", location: {lat:35.681434, lng:139.769206}}
 ];
 
+// Data model for location
 var Location = function(data){
     this.id = data.id;
     this.title = data.title;
@@ -53,22 +55,21 @@ var ViewModel = function() {
 
     // Filitering location with a keyword
     this.filterLocation = function(){
-
         // Get a keyword
         keyword = document.getElementById("input").value.toLowerCase();
-
         // Make a list, filtering them based on the keyword in the input form
         self.locationList().forEach(function(location){
             location.active(false);
             if (keyword == "" || location.title.toLowerCase().includes(keyword)) {
                 location.filtered(true);
+                // make a filtered location visible on a map
                 markers[location.id].setVisible(true);
             } else {
                 location.filtered(false);
+                // make a filtered-out location invisible
                 markers[location.id].setVisible(false);
             }
         });
-
         fitToScreen();
     };
 
@@ -78,18 +79,17 @@ var ViewModel = function() {
             if (location.id == clickedTab.id) {
                 clickedTab.active(!clickedTab.active());
                 google.maps.event.trigger(markers[location.id], 'click');
-                console.log(markers);
             } else {
                 location.active(false);
             };
         });
-
     };
 }
 
 ko.applyBindings(new ViewModel());
 
-var initMap = function(keyword="") {
+// Handle google map
+var initMap = function() {
     // Constructor creates a new map - only center and zoom are required.
     map = new google.maps.Map(document.getElementById('map'), {
         center: locations[0].location,
@@ -107,8 +107,16 @@ var initMap = function(keyword="") {
         marker.addListener('click', function() {
             populateInfoWindow(this, largeInfowindow);
         });
+        marker.addListener('dblclick', function(){
+            getPhotosFromFlickr(location, function(err, data) {
+                if (err !== null) {
+                    alert('Something went wrong: ' + err);
+                } else {
+                    showPhotos(data);
+                }
+            });
+        });
     }
-
     fitToScreen();
 }
 
@@ -152,12 +160,71 @@ var fitToScreen = function(){
 }
 
 // Get photos near the location
-var getPhotosFromFlickr = function(location){
-    var url = "https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=1091d64c9d48f5c5b8af1fa172f5b61f&lat=35.686329&lon=139.764901&radius=1&format=json&nojsoncallback=1&auth_token=72157686118452423-834fd72ac490415a&api_sig=6c4ade38c18717fc7204a623610d20ca"
-    fetch(url)
-    .then(res => res.json())
-    .then((out) => {
-        console.log('Checkout this JSON! ', out);
-    })
-    .catch(err => console.error(err));
+var getPhotosFromFlickr = function(location, callback){
+    var url = urlForFlickrSearch(location);
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'json';
+    xhr.onload = function() {
+     var status = xhr.status;
+        if (status === 200) {
+            callback(null, xhr.response);
+        } else {
+            callback(status, xhr.response);
+        }
+    };
+    xhr.send();
+};
+
+// make a url for searching photos near the location
+var urlForFlickrSearch = function(location){
+    let key = "75d403097c79709e77f3b8a0470359d5";
+    var url = " https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=";
+    url += key;
+    url += "&lat=";
+    url += location.location.lat;
+    url += "&lon="
+    url += location.location.lng;
+    url += "&radius=0.01&per_page=100&page=1&format=json&nojsoncallback=1";
+    return url;
+}
+
+// make a url of a randomly picked image
+var urlForFlickrImg = function(data, int) {
+    photo = data.photos.photo[int];
+    var url = "http://farm";
+    url += photo.farm;
+    url += ".staticflickr.com/";
+    url += photo.server;
+    url += "/";
+    url += photo.id;
+    url += "_",
+    url += photo.secret;
+    url += ".jpg";
+    return url;
+}
+
+// show an randomly picked image with modal
+var showPhotos = function(json){
+    // Pick a random photo from results
+    length = json.photos.photo.length;
+    int = Math.floor(Math.random() * (length+1));
+
+    // Get the modal
+    var modal = document.getElementById('myModal');
+
+    // Get the image and insert it inside the modal - use its "title"" text as a caption
+    var modalImg = document.getElementById("img01");
+    var captionText = document.getElementById("caption");
+    modal.style.display = "block";
+    modalImg.src = urlForFlickrImg(json, int);
+    captionText.innerHTML = json.photos.photo[int].title;
+
+    // Get the <span> element that closes the modal
+    var span = document.getElementsByClassName("close")[0];
+
+    // When the user clicks on <span> (x), close the modal
+    span.onclick = function() {
+        modal.style.display = "none";
+    }
 }
