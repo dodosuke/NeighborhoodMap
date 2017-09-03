@@ -3,7 +3,7 @@ var map;
 var markers = [];
 
 // list of locations
-let locations = [
+var locations = [
     {id: 0, title: "Beck's Cofee Shop", location: {lat:35.698453, lng:139.773124}},
     {id: 1, title: "Doutor Coffee Asakusabashi Minami", location: {lat:35.696891, lng:139.78579}},
     {id: 2, title: "Doutor Coffee Sotokanda 1-Chome", location: {lat:35.69948, lng:139.769592}},
@@ -31,7 +31,7 @@ var Location = function(data){
     this.location = data.location;
     this.active = ko.observable(false);
     this.filtered = ko.observable(true);
-}
+};
 
 var ViewModel = function() {
     var self = this;
@@ -56,11 +56,11 @@ var ViewModel = function() {
     // Filitering location with a keyword
     this.filterLocation = function(){
         // Get a keyword
-        keyword = document.getElementById("input").value.toLowerCase();
+        var keyword = document.getElementById("input").value.toLowerCase();
         // Make a list, filtering them based on the keyword in the input form
         self.locationList().forEach(function(location){
             location.active(false);
-            if (keyword == "" || location.title.toLowerCase().includes(keyword)) {
+            if (keyword === "" || location.title.toLowerCase().includes(keyword)) {
                 location.filtered(true);
                 // make a filtered location visible on a map
                 markers[location.id].setVisible(true);
@@ -81,10 +81,10 @@ var ViewModel = function() {
                 google.maps.event.trigger(markers[location.id], 'click');
             } else {
                 location.active(false);
-            };
+            }
         });
     };
-}
+};
 
 ko.applyBindings(new ViewModel());
 
@@ -97,28 +97,32 @@ var initMap = function() {
     });
 
     var largeInfowindow = new google.maps.InfoWindow();
-    var bounds = new google.maps.LatLngBounds();
 
     // Add locations to the map
     for (var i = 0; i < locations.length; i++) {
         var location = locations[i];
-        marker = makeMarker(location);
+        var marker = makeMarker(location);
         markers.push(marker);
-        marker.addListener('click', function() {
-            populateInfoWindow(this, largeInfowindow);
-        });
-        marker.addListener('dblclick', function(){
-            getPhotosFromFlickr(location, function(err, data) {
-                if (err !== null) {
-                    alert('Something went wrong: ' + err);
-                } else {
-                    showPhotos(data);
-                }
-            });
-        });
+        addEvents(location, marker, largeInfowindow);
     }
     fitToScreen();
-}
+};
+
+// Add events to Google Map
+var addEvents = function(location, marker, infowindow) {
+    marker.addListener('click', function() {
+        populateInfoWindow(this, infowindow);
+    });
+    marker.addListener('dblclick', function(){
+        getPhotosFromFlickr(location, function(err, data) {
+            if (err !== null) {
+                alert('Something went wrong: ' + err);
+            } else {
+                showPhotos(data);
+            }
+        });
+    });
+};
 
 // Set uo marker based on a location
 var makeMarker = function(location) {
@@ -130,7 +134,7 @@ var makeMarker = function(location) {
         id: location.id
     });
     return marker;
-}
+};
 
 // This function populates the infowindow when the marker is clicked. We'll only allow
 // one infowindow which will open at the marker that is clicked, and populate based
@@ -146,7 +150,7 @@ var populateInfoWindow = function(marker, infowindow) {
             infowindow.setMarker = null;
         });
     }
-}
+};
 
 // Zoom in or out based on visible locations
 var fitToScreen = function(){
@@ -154,10 +158,10 @@ var fitToScreen = function(){
     for (var i=0; i < markers.length; i++) {
         if (markers[i].visible){
             bounds.extend(markers[i].position);
-        };
-    };
+        }
+    }
     map.fitBounds(bounds);
-}
+};
 
 // Get photos near the location
 var getPhotosFromFlickr = function(location, callback){
@@ -166,7 +170,7 @@ var getPhotosFromFlickr = function(location, callback){
     xhr.open('GET', url, true);
     xhr.responseType = 'json';
     xhr.onload = function() {
-     var status = xhr.status;
+    var status = xhr.status;
         if (status === 200) {
             callback(null, xhr.response);
         } else {
@@ -178,37 +182,37 @@ var getPhotosFromFlickr = function(location, callback){
 
 // make a url for searching photos near the location
 var urlForFlickrSearch = function(location){
-    let key = "75d403097c79709e77f3b8a0470359d5";
+    var key = "75d403097c79709e77f3b8a0470359d5";
     var url = " https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=";
     url += key;
     url += "&lat=";
     url += location.location.lat;
-    url += "&lon="
+    url += "&lon=";
     url += location.location.lng;
     url += "&radius=0.01&per_page=100&page=1&format=json&nojsoncallback=1";
     return url;
-}
+};
 
 // make a url of a randomly picked image
 var urlForFlickrImg = function(data, int) {
-    photo = data.photos.photo[int];
+    var photo = data.photos.photo[int];
     var url = "http://farm";
     url += photo.farm;
     url += ".staticflickr.com/";
     url += photo.server;
     url += "/";
     url += photo.id;
-    url += "_",
+    url += "_";
     url += photo.secret;
     url += ".jpg";
     return url;
-}
+};
 
 // show an randomly picked image with modal
 var showPhotos = function(json){
     // Pick a random photo from results
-    length = json.photos.photo.length;
-    int = Math.floor(Math.random() * (length+1));
+    var length = json.photos.photo.length;
+    var int = Math.floor(Math.random() * (length+1));
 
     // Get the modal
     var modal = document.getElementById('myModal');
@@ -226,5 +230,5 @@ var showPhotos = function(json){
     // When the user clicks on <span> (x), close the modal
     span.onclick = function() {
         modal.style.display = "none";
-    }
-}
+    };
+};
