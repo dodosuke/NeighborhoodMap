@@ -8,7 +8,7 @@
             <input id="input", type="text">
             <button class="filter", data-bind="click: filterLocation">Filter</button>
             <div id="list" data-bind="foreach: locationList">
-                <button class="locationTab" data-bind="css: $root.styling($data), text: title, click: $root.selectLocation"}></button>
+                <button data-bind="css: $root.styling($data), text: title, click: $root.selectLocation"}></button>
             </div>
         </nav>
         <section id="map"></section>
