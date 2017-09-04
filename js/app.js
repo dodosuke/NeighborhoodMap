@@ -35,8 +35,13 @@ var Location = function(data){
 
 var ViewModel = function() {
     var self = this;
+
+    // Set observables
     self.locationArray = ko.observableArray();
     self.keyword = ko.observable('');
+    self.url = ko.observable('');
+    self.mode = ko.observable('none');
+    self.caption = ko.observable('');
 
     // Make a location list from location data
     locations.forEach(function(location){
@@ -58,9 +63,7 @@ var ViewModel = function() {
     self.locationList = ko.computed(function(){
         var result;
         if (!self.keyword()) {
-            for (var i=0; i < markers.length; i++) {
-                markers[i].setVisible(true);
-            };
+            for (var i=0; i < markers.length; i++) {markers[i].setVisible(true);};
             return self.locationArray();
         } else {
             return ko.utils.arrayFilter(self.locationArray(), function(location) {
@@ -71,45 +74,48 @@ var ViewModel = function() {
                     markers[location.id].setVisible(false);
                 }
                 return result;
-
-                //return location.title.toLowerCase().indexOf(self.keyword().toLowerCase()) !== -1;
             });
         }
     });
 
-    // Filitering location with a keyword
-    self.filterLocation = function(){
-        // Make a list, filtering them based on the keyword in the input form
-        var keyword = self.query();
-        self.locationList().forEach(function(location){
-            location.active(false);
-            if (keyword === "" || location.title.toLowerCase().includes(keyword)) {
-                location.filtered(true);
-                // make a filtered location visible on a map
-                markers[location.id].setVisible(true);
-            } else {
-                location.filtered(false);
-                // make a filtered-out location invisible
-                markers[location.id].setVisible(false);
-            }
-        });
-        fitToScreen();
-    };
-
     // Change a state when clicking a location in a list
     self.selectLocation = function(clickedTab){
         self.locationList().forEach(function(location){
-            if (location.id == clickedTab.id) {
-                clickedTab.active(!clickedTab.active());
-                google.maps.event.trigger(markers[location.id], 'click');
+            if (location.id === clickedTab.id) {
+                // If click a clicked tab, call double click from google map
+                if (clickedTab.active()) {
+                    google.maps.event.trigger(markers[location.id], 'dblclick');
+                // Make a list active and call click from google map
+                } else {
+                    clickedTab.active(!clickedTab.active());
+                    google.maps.event.trigger(markers[location.id], 'click');
+                }
             } else {
+                // Make the other location tabs inactive
                 location.active(false);
             }
         });
     };
 };
 
-ko.applyBindings(new ViewModel());
+// Add events to Google Map
+var addEvents = function(location, marker, infowindow) {
+    marker.addListener('click', function() {
+        populateInfoWindow(this, infowindow);
+    });
+    marker.addListener('dblclick', function(){
+        getPhotosFromFlickr(location, function(err, data) {
+            if (err !== null) {
+                alert('Something went wrong: ' + err);
+            } else {
+                showPhotos(data);
+            }
+        });
+    });
+};
+
+var vm = new ViewModel();
+ko.applyBindings(vm);
 
 // Handle google map
 var initMap = function() {
@@ -129,22 +135,6 @@ var initMap = function() {
         addEvents(location, marker, largeInfowindow);
     }
     fitToScreen();
-};
-
-// Add events to Google Map
-var addEvents = function(location, marker, infowindow) {
-    marker.addListener('click', function() {
-            populateInfoWindow(this, infowindow);
-    });
-    marker.addListener('dblclick', function(){
-        getPhotosFromFlickr(location, function(err, data) {
-            if (err !== null) {
-                alert('Something went wrong: ' + err);
-            } else {
-                showPhotos(data);
-            }
-        });
-    });
 };
 
 // Set uo marker based on a location
@@ -170,7 +160,6 @@ var populateInfoWindow = function(marker, infowindow) {
         marker.setAnimation(google.maps.Animation.BOUNCE);
         setTimeout(function(){marker.setAnimation(null);}, 700);
     }
-
     if (infowindow.marker != marker) {
         infowindow.marker = marker;
         infowindow.setContent('<div>' + marker.title + '</div>');
@@ -213,7 +202,7 @@ var getPhotosFromFlickr = function(location, callback){
 // make a url for searching photos near the location
 var urlForFlickrSearch = function(location){
     var key = "75d403097c79709e77f3b8a0470359d5";
-    var url = " https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=";
+    var url = "https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=";
     url += key;
     url += "&lat=";
     url += location.location.lat;
@@ -238,29 +227,18 @@ var urlForFlickrImg = function(data, int) {
     return url;
 };
 
-// show an randomly picked image with modal
 var showPhotos = function(json){
-
-    console.log(json);
     // Pick a random photo from results
     var length = json.photos.photo.length;
     var int = Math.floor(Math.random() * (length+1));
 
-    // Get the modal
-    var modal = document.getElementById('myModal');
-
-    // Get the image and insert it inside the modal - use its "title"" text as a caption
-    var modalImg = document.getElementById("img01");
-    var captionText = document.getElementById("caption");
-    modal.style.display = "block";
-    modalImg.src = urlForFlickrImg(json, int);
-    captionText.innerHTML = json.photos.photo[int].title;
-
-    // Get the <span> element that closes the modal
-    var span = document.getElementsByClassName("close")[0];
+    // Update observables
+    vm.url(urlForFlickrImg(json, int));
+    vm.caption(json.photos.photo[int].title);
+    vm.mode("block");
 
     // When the user clicks on <span> (x), close the modal
-    span.onclick = function() {
-        modal.style.display = "none";
-    };
+    vm.closeModal = function() {
+        vm.mode("none");
+    }
 };

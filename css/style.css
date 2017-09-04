@@ -13,16 +13,7 @@ nav {
 
 input {
     height: 40px;
-    width: 80%;
-}
-
-button.filter {
-    float: right;
-    width: 20%;
-    height: 40px;
-    padding: 0px 0px;
-    vertical-align: middle;
-    text-align: center;
+    width: 100%;
 }
 
 #list{
