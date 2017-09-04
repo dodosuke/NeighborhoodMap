@@ -6,8 +6,8 @@
         <link rel="stylesheet" href="css/style.css">
     </head>
     <body>
-        <nav id="nav">
-            <input placeholder="Search..." id="input" data-bind="textInput: keyword" />
+        <nav>
+            <input placeholder="Search..." data-bind="textInput: keyword" />
             <div id="list" data-bind="foreach: locationList">
                 <button data-bind="css: $root.styling($data), text: title, click: $root.selectLocation"></button>
             </div>

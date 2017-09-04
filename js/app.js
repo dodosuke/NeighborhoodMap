@@ -30,15 +30,15 @@ var Location = function(data){
     this.title = data.title;
     this.location = data.location;
     this.active = ko.observable(false);
-    this.filtered = ko.observable(true);
 };
+
 
 var ViewModel = function() {
     var self = this;
 
     // Set observables
     self.locationArray = ko.observableArray();
-    self.keyword = ko.observable('');
+    self.keyword = ko.observable();
     self.url = ko.observable('');
     self.mode = ko.observable('none');
     self.caption = ko.observable('');
@@ -50,9 +50,7 @@ var ViewModel = function() {
 
     // Change a class based on states
     self.styling = function(location){
-        if (!location.filtered()){
-            return 'hide';
-        } else if (location.active()){
+        if (location.active()){
             return 'active';
         } else {
             return '';
@@ -63,17 +61,18 @@ var ViewModel = function() {
     self.locationList = ko.computed(function(){
         var result;
         if (!self.keyword()) {
-            for (var i=0; i < markers.length; i++) {markers[i].setVisible(true);};
+            for (var i=0; i < markers.length; i++) {markers[i].setVisible(true);}
             return self.locationArray();
         } else {
             return ko.utils.arrayFilter(self.locationArray(), function(location) {
-                result = location.title.toLowerCase().indexOf(self.keyword().toLowerCase())
+                result = (location.title.toLowerCase().indexOf(self.keyword().toLowerCase());
                 if (result !== -1) {
                     markers[location.id].setVisible(true);
+                    return true;
                 } else {
                     markers[location.id].setVisible(false);
+                    return false;
                 }
-                return result;
             });
         }
     });
@@ -97,25 +96,6 @@ var ViewModel = function() {
         });
     };
 };
-
-// Add events to Google Map
-var addEvents = function(location, marker, infowindow) {
-    marker.addListener('click', function() {
-        populateInfoWindow(this, infowindow);
-    });
-    marker.addListener('dblclick', function(){
-        getPhotosFromFlickr(location, function(err, data) {
-            if (err !== null) {
-                alert('Something went wrong: ' + err);
-            } else {
-                showPhotos(data);
-            }
-        });
-    });
-};
-
-var vm = new ViewModel();
-ko.applyBindings(vm);
 
 // Handle google map
 var initMap = function() {
@@ -147,6 +127,22 @@ var makeMarker = function(location) {
         id: location.id
     });
     return marker;
+};
+
+// Add events to Google Map
+var addEvents = function(location, marker, infowindow) {
+    marker.addListener('click', function() {
+        populateInfoWindow(this, infowindow);
+    });
+    marker.addListener('dblclick', function(){
+        getPhotosFromFlickr(location, function(err, data) {
+            if (err !== null) {
+                alert('Something went wrong: ' + err);
+            } else {
+                showPhotos(data);
+            }
+        });
+    });
 };
 
 // This function populates the infowindow when the marker is clicked. We'll only allow
@@ -182,7 +178,8 @@ var fitToScreen = function(){
     map.fitBounds(bounds);
 };
 
-// Get photos near the location
+
+// Get photos near the location using Flickr
 var getPhotosFromFlickr = function(location, callback){
     var url = urlForFlickrSearch(location);
     var xhr = new XMLHttpRequest();
@@ -240,5 +237,8 @@ var showPhotos = function(json){
     // When the user clicks on <span> (x), close the modal
     vm.closeModal = function() {
         vm.mode("none");
-    }
+    };
 };
+
+var vm = new ViewModel();
+ko.applyBindings(vm);
