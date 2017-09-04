@@ -16,12 +16,12 @@
         <aside>
             <div id="myModal" class="modal" data-bind="style: {display: mode}">
                 <span class="close" data-bind="click: $root.closeModal">&times;</span>
-                <img class="modal-content" data-bind="attr: {src: url}">
+                <img class="modal-content" data-bind="attr: {src: url, alt:caption}">
                 <div id="caption" data-bind="text: caption"></div>
             </div>
         </aside>
         <script type="text/javascript" src="js/knockout-3.4.2.js"></script>
         <script type="text/javascript" src="js/app.js"></script>
-        <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCUWpn4fcqHtzEQC2_b7ZDPVmugn4Fqvyg&v=3&callback=initMap"></script>
+        <script defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCUWpn4fcqHtzEQC2_b7ZDPVmugn4Fqvyg&v=3&callback=initMap" onerror="mapError()"></script>
     </body>
 </html>

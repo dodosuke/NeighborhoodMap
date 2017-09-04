@@ -2,27 +2,19 @@
 var map;
 var markers = [];
 
-// list of locations
-var locations = [
-    {id: 0, title: "Beck's Cofee Shop", location: {lat:35.698453, lng:139.773124}},
-    {id: 1, title: "Doutor Coffee Asakusabashi Minami", location: {lat:35.696891, lng:139.78579}},
-    {id: 2, title: "Doutor Coffee Sotokanda 1-Chome", location: {lat:35.69948, lng:139.769592}},
-    {id: 3, title: "Kanda Coffee Gardens Kanda North Exit", location: {lat:35.692068, lng:139.770783}},
-    {id: 4, title: "Doutor Coffee Kodenmacho", location: {lat:35.69188, lng:139.780125}},
-    {id: 5, title: "Yanaka Coffee", location: {lat:35.687093, lng:139.774801}},
-    {id: 6, title: "Starbucks Tokyo Medical and Dental University", location: {lat:35.70108, lng:139.764298}},
-    {id: 7, title: "Starbucks Coffee Tokyo Station City Sapia Tower", location: {lat:35.68371, lng:139.768564}},
-    {id: 8, title: "Ueshima Coffee Jinbocho", location: {lat:35.695467, lng:139.760615}},
-    {id: 9, title: "Streamer Coffee Company Kayabacho", location: {lat:35.682609, lng:139.781424}},
-    {id: 10, title: "Glitch Coffee and Roasters", location: {lat:35.693743, lng:139.761305}},
-    {id: 11, title: "Starbucks Coffee Akihabara Station", location: {lat: 35.697823, lng:139.773696}},
-    {id: 12, title: "Marufuku Coffee", location: {lat:35.698655, lng:139.77485}},
-    {id: 13, title: "Yanaka Coffee Kanda", location: {lat: 35.695414, lng:139.767031}},
-    {id: 14, title: "Segafredo", location: {lat:35.703116, lng:139.771344}},
-    {id: 15, title: "Berth Coffee", location: {lat:35.691571, lng:139.781352}},
-    {id: 16, title: "Miyakoshiya Coffee", location: {lat: 35.685057, lng:139.774075}},
-    {id: 17, title: "Inoda Coffee", location: {lat:35.681434, lng:139.769206}}
-];
+// For loading json files from resources folder
+var loadJSON = function(url) {
+    var request = new XMLHttpRequest();
+
+    request.overrideMimeType("application/json");
+    request.open('GET', url, false);
+    request.send();
+
+    if (request.readyState === 4)
+        return request.responseText;
+};
+
+var locations = JSON.parse(loadJSON('resources/locations.json'));
 
 // Data model for location
 var Location = function(data){
@@ -32,7 +24,7 @@ var Location = function(data){
     this.active = ko.observable(false);
 };
 
-
+// ViewModel to handle list
 var ViewModel = function() {
     var self = this;
 
@@ -65,7 +57,8 @@ var ViewModel = function() {
             return self.locationArray();
         } else {
             return ko.utils.arrayFilter(self.locationArray(), function(location) {
-                result = (location.title.toLowerCase().indexOf(self.keyword().toLowerCase());
+                result = (location.title.toLowerCase().indexOf(self.keyword().toLowerCase()));
+                // If location title contains a keyword, make the pin visible and leave in the list
                 if (result !== -1) {
                     markers[location.id].setVisible(true);
                     return true;
@@ -80,22 +73,22 @@ var ViewModel = function() {
     // Change a state when clicking a location in a list
     self.selectLocation = function(clickedTab){
         self.locationList().forEach(function(location){
-            if (location.id === clickedTab.id) {
-                // If click a clicked tab, call double click from google map
-                if (clickedTab.active()) {
-                    google.maps.event.trigger(markers[location.id], 'dblclick');
-                // Make a list active and call click from google map
-                } else {
-                    clickedTab.active(!clickedTab.active());
-                    google.maps.event.trigger(markers[location.id], 'click');
-                }
+            // If click a clicked tab, call double click from google map
+            if (location.id === clickedTab.id && clickedTab.active()) {
+                google.maps.event.trigger(markers[location.id], 'dblclick');
+            // Make a list active and call click from google map
+            } else if (location.id === clickedTab.id && !clickedTab.active()) {
+                clickedTab.active(!clickedTab.active());
+                google.maps.event.trigger(markers[location.id], 'click');
             } else {
-                // Make the other location tabs inactive
+            // Make the other location tabs inactive
                 location.active(false);
             }
         });
     };
 };
+
+
 
 // Handle google map
 var initMap = function() {
@@ -117,7 +110,7 @@ var initMap = function() {
     fitToScreen();
 };
 
-// Set uo marker based on a location
+// Set up a marker based on a location
 var makeMarker = function(location) {
     var marker = new google.maps.Marker({
         map: map,
@@ -135,13 +128,7 @@ var addEvents = function(location, marker, infowindow) {
         populateInfoWindow(this, infowindow);
     });
     marker.addListener('dblclick', function(){
-        getPhotosFromFlickr(location, function(err, data) {
-            if (err !== null) {
-                alert('Something went wrong: ' + err);
-            } else {
-                showPhotos(data);
-            }
-        });
+        getPhotosFromFlickr(location);
     });
 };
 
@@ -178,22 +165,33 @@ var fitToScreen = function(){
     map.fitBounds(bounds);
 };
 
+// Error handler for loading Google Map
+var mapError = function(){
+    alert('Looks like there was a problem in loading google map');
+};
 
-// Get photos near the location using Flickr
-var getPhotosFromFlickr = function(location, callback){
+
+// Get photos near the location using Flickr API
+var getPhotosFromFlickr = function(location){
     var url = urlForFlickrSearch(location);
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-    xhr.responseType = 'json';
-    xhr.onload = function() {
-    var status = xhr.status;
-        if (status === 200) {
-            callback(null, xhr.response);
-        } else {
-            callback(status, xhr.response);
-        }
-    };
-    xhr.send();
+
+    fetch(url)
+        .then(
+            function(response) {
+                if (!response.ok) {
+                    alert('Network response was not ok.');
+                } else if (response.status !== 200) {
+                    alert('Looks like there was a problem. Status Code: ' +  response.status);
+                }
+                // Examine the text in the response
+                response.json().then(function(data) {
+                    showPhotos(data);
+                });
+            }
+        )
+        .catch(function(err) {
+            alert('Fetch Error :-S', err);
+        });
 };
 
 // make a url for searching photos near the location
