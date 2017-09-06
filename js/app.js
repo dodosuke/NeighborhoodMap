@@ -21,7 +21,7 @@ var locations = [
     {"id": 15, "title": "Berth Coffee", "location": {"lat":35.691571, "lng":139.781352}},
     {"id": 16, "title": "Miyakoshiya Coffee", "location": {"lat": 35.685057, "lng":139.774075}},
     {"id": 17, "title": "Inoda Coffee", "location": {"lat":35.681434, "lng":139.769206}}
-]
+];
 
 // Data model for location
 var Location = function(data){
