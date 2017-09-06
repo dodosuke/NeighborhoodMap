@@ -17,15 +17,14 @@ Go to https://dodosuke.github.io/NeighborhoodMap/
 
 ## Description
 This web application is using:
-* Knockout library for listing locations;
-* Google map javascript API library for showing locations on map, and
-* Flickr API for getting photos from Flickr.
+* Knockout library for listing locations
+* Google map javascript API library for showing locations on map
+* Flickr API for getting photos from Flickr
 
 The web app contains:
 * Index.html              : HTML-based web application
-* js/app.js               : JavaScript for using knockout/GoogleMapApis/FlickrAPIs,
-* css/style.css           : CSS file, and
-* resources/locations.json: JSON format file storing location data.
+* js/app.js               : JavaScript for using knockout/GoogleMapApis/FlickrAPIs
+* css/style.css           : CSS file
 
 ## Author
 [dodosuke @ Github](https://github.com/dodosuke)  
